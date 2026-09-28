@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>DISPENDIK RUN 2026</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; margin: 0; }
+  #app { min-height: 100vh; }
+  img { max-width: 100%; height: auto; }
+
+  .bib-card {
+    background: linear-gradient(135deg, #fff 0%, #f1f5f9 100%);
+    border: 4px solid #0f172a;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    .printable-area, .printable-area * { visibility: visible; }
+    .printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+  .loader {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #f59e0b;
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress-bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #059669); transition: width 0.4s ease; }
+  .progress-fill.warning { background: linear-gradient(90deg, #f59e0b, #f97316); }
+  .progress-fill.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+  .file-preview-wrap {
+    position: relative; background: #f8fafc; border-radius: 12px;
+    overflow: hidden; border: 1px solid #e2e8f0;
+    min-height: 120px; display: flex; align-items: center; justify-content: center;
+  }
+  .file-preview-wrap img { max-width: 100%; max-height: 320px; object-fit: contain; display: block; }
+  .file-preview-wrap.error {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-color: #f59e0b; padding: 20px; text-align: center;
+  }
+  .file-preview-loading {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 24px; color: #64748b;
+  }
+  .file-preview-loading .spinner {
+    border: 3px solid #e2e8f0; border-top: 3px solid #f59e0b;
+    border-radius: 50%; width: 32px; height: 32px;
+    animation: spin 0.8s linear infinite; margin-bottom: 8px;
+  }
+  .drive-link-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; background: #1e40af; color: #fff;
+    border-radius: 8px; font-size: 12px; font-weight: 700;
+    text-decoration: none; transition: all 0.2s ease;
+    cursor: pointer; border: none;
+  }
+  .drive-link-btn:hover { background: #1e3a8a; transform: translateY(-1px); }
+  .drive-link-btn.secondary { background: #475569; }
+  .drive-link-btn.secondary:hover { background: #334155; }
+
+  .wa-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 12px; background: #25D366; color: #fff; border-radius: 8px;
+    font-size: 12px; font-weight: 700; text-decoration: none;
+    transition: all 0.2s ease; border: none; cursor: pointer;
+  }
+  .wa-btn:hover { background: #1da851; transform: translateY(-1px); }
+  .wa-icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; background: #25D366; color: #fff;
+    border-radius: 6px; text-decoration: none; transition: all 0.2s ease;
+    border: none; cursor: pointer; font-size: 14px;
+  }
+  .wa-icon-btn:hover { background: #1da851; transform: scale(1.05); }
+
+  /* PDF Container */
+  #pdf-report-container {
+    position: fixed; left: -99999px; top: 0; width: 210mm;
+    background: #fff; color: #000; font-family: 'Inter', Arial, sans-serif;
+    z-index: -1;
+  }
+  .pdf-page {
+    width: 210mm; min-height: 297mm; padding: 10mm 8mm;
+    background: #fff; box-sizing: border-box;
+    page-break-after: always; position: relative;
+  }
+  .pdf-page:last-child { page-break-after: auto; }
+
+  .pdf-header {
+    border-bottom: 3px double #0f172a; padding-bottom: 8px;
+    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .pdf-header-left h1 { font-size: 16px; font-weight: 900; margin: 0; text-transform: uppercase; }
+  .pdf-header-left p { font-size: 9px; margin: 2px 0 0; color: #475569; }
+  .pdf-header-right { text-align: right; font-size: 9px; color: #475569; line-height: 1.4; }
+
+  .pdf-title { text-align: center; font-size: 13px; font-weight: 800; text-transform: uppercase; margin: 6px 0 4px; }
+  .pdf-subtitle { text-align: center; font-size: 9px; color: #64748b; margin-bottom: 8px; }
+
+  .pdf-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .pdf-summary-card { border: 1px solid #cbd5e1; border-radius: 4px; padding: 5px 6px; text-align: center; }
+  .pdf-summary-card .label { font-size: 8px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+  .pdf-summary-card .value { font-size: 13px; font-weight: 900; margin-top: 2px; }
+
+  .pdf-table { width: 100%; border-collapse: collapse; font-size: 8.5px; margin-top: 4px; }
+  .pdf-table thead th {
+    background: #0f172a; color: #fff; padding: 5px 4px;
+    text-align: left; font-size: 8px; text-transform: uppercase;
+    border: 1px solid #0f172a; font-weight: 800;
+  }
+  .pdf-table tbody td { padding: 4px; border: 1px solid #cbd5e1; vertical-align: top; }
+  .pdf-table tbody tr:nth-child(even) { background: #f8fafc; }
+  .pdf-table .col-no { width: 4.5%; text-align: center; }
+  .pdf-table .col-bib { width: 8%; font-weight: 700; text-align: center; }
+  .pdf-table .col-nama { width: 19%; }
+  .pdf-table .col-gender { width: 5%; text-align: center; }
+  .pdf-table .col-kontak { width: 23%; font-size: 8px; }
+  .pdf-table .col-kategori { width: 9%; text-align: center; font-weight: 700; }
+  .pdf-table .col-kaos { width: 5%; text-align: center; }
+  .pdf-table .col-harga { width: 9%; text-align: right; }
+  .pdf-table .col-status { width: 7.5%; text-align: center; }
+
+  .pdf-status-badge {
+    display: inline-block; padding: 1px 5px; border-radius: 10px;
+    font-size: 7px; font-weight: 800; text-transform: uppercase;
+  }
+  .pdf-status-verified { background: #d1fae5; color: #065f46; }
+  .pdf-status-pending { background: #fef3c7; color: #92400e; }
+  .pdf-status-rejected { background: #fee2e2; color: #991b1b; }
+
+  .pdf-footer {
+    position: absolute; bottom: 6mm; left: 8mm; right: 8mm;
+    border-top: 1px solid #cbd5e1; padding-top: 5px;
+    font-size: 8px; color: #64748b; display: flex; justify-content: space-between;
+  }
+  .pdf-signature { margin-top: 15px; display: flex; justify-content: flex-end; padding-right: 15mm; }
+  .pdf-signature-box { text-align: center; font-size: 9px; }
+  .pdf-signature-line { margin-top: 35px; border-top: 1px solid #0f172a; padding-top: 4px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="toast-container" class="fixed top-4 right-4 left-4 sm:left-auto sm:max-w-sm z-[1000000] flex flex-col gap-2 pointer-events-none"></div>
+
+  <div id="custom-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000001] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-800 pr-4">Pemberitahuan</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 rounded-lg p-1 flex-shrink-0">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div id="modal-body" class="text-slate-600 text-sm mb-6 leading-relaxed break-words"></div>
+      <div class="flex justify-end gap-2 flex-wrap" id="modal-footer">
+        <button onclick="closeModal()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-900 transition">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000002] hidden flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 text-center shadow-2xl mx-4">
+      <div class="loader mx-auto mb-3" style="width:40px;height:40px;border-width:4px;"></div>
+      <p class="text-sm font-semibold text-slate-700" id="loading-text">Memproses...</p>
+    </div>
+  </div>
+
+  <header class="bg-slate-900 text-white sticky top-0 z-50 border-b border-slate-800 shadow-lg">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        <div class="flex items-center gap-2 sm:gap-3 cursor-pointer min-w-0" onclick="switchView('landing')">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-tr from-amber-500 to-amber-400 rounded-xl flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-lg flex-shrink-0 transform -rotate-3">
+            <i class="fa-solid fa-person-running"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-base sm:text-xl font-black tracking-wider bg-gradient-to-r from-white to-amber-300 bg-clip-text text-transparent block uppercase leading-tight">DISPENDIK RUN</span>
+            <span class="text-[10px] sm:text-xs text-amber-400 font-semibold tracking-widest block uppercase">RUNNING EVENT 2026</span>
+          </div>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-6">
+          <button onclick="switchView('landing')" class="text-slate-300 hover:text-white font-medium text-sm transition">
+            <i class="fa-solid fa-house text-xs mr-1"></i> Beranda
+          </button>
+          <button onclick="switchView('status-check')" class="text-slate-300 hover:text-white font-medium text-sm transition">
+            <i class="fa-solid fa-magnifying-glass text-xs mr-1"></i> Cek Status
+          </button>
+          <button onclick="switchView('login')" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 transition border border-slate-700">
+            <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Masuk
+          </button>
+        </nav>
+
+        <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-6 space-y-2">
+      <button onclick="switchView('landing'); toggleMobileMenu();" class="w-full text-left py-3 text-slate-200 font-medium text-sm hover:text-amber-400 flex items-center gap-3">
+        <i class="fa-solid fa-house w-5 text-amber-400"></i> Beranda
+      </button>
+      <button onclick="switchView('status-check'); toggleMobileMenu();" class="w-full text-left py-3 text-slate-200 font-medium text-sm hover:text-amber-400 flex items-center gap-3">
+        <i class="fa-solid fa-magnifying-glass w-5 text-amber-400"></i> Cek Status
+      </button>
+      <div class="pt-2 border-t border-slate-800">
+        <button onclick="switchView('login'); toggleMobileMenu();" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-sm transition">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Masuk Akun
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- VIEW LANDING -->
+    <section id="view-landing" class="space-y-8 sm:space-y-12">
+
+      <div class="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-900 text-white shadow-2xl border border-slate-800">
+        <div class="absolute inset-0 z-0 opacity-40 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1600&q=80')"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-transparent z-10"></div>
+
+        <div class="relative z-20 p-6 sm:p-12 lg:p-16 max-w-3xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-4 sm:mb-6">
+            <i class="fa-solid fa-calendar-days"></i> <span id="hero-event-date">MEMUAT...</span>
+          </div>
+          <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight uppercase mb-3 sm:mb-4" id="hero-title">DISPENDIK RUN 2026</h1>
+          <p class="text-slate-300 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed">
+            Ajang lari sehat terbesar hasil kolaborasi Dinas Pendidikan. Raih BIB eksklusif, E-Tiket ber-QR Code, dan medali finisher spektakuler!
+          </p>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="#register-form-section" class="px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black rounded-xl sm:rounded-2xl text-sm sm:text-base shadow-xl transition flex items-center gap-2 uppercase tracking-wide">
+              <i class="fa-solid fa-pen-to-square"></i> Daftar Sekarang
+            </a>
+            <button onclick="switchView('status-check')" class="px-5 sm:px-6 py-3.5 sm:py-4 bg-slate-800/80 hover:bg-slate-800 text-white font-bold rounded-xl sm:rounded-2xl text-sm sm:text-base border border-slate-700 transition flex items-center gap-2">
+              <i class="fa-solid fa-ticket text-amber-400"></i> Cek E-Tiket
+            </button>
+          </div>
+        </div>
+
+        <div class="relative z-20 bg-slate-950/80 backdrop-blur-md border-t border-slate-800/80 p-4 sm:p-6 grid grid-cols-3 gap-3 sm:gap-6 text-center">
+          <div>
+            <span class="block text-xl sm:text-3xl font-black text-white" id="stat-total-quota">0</span>
+            <span class="text-[10px] sm:text-xs text-slate-400 font-medium uppercase">Total Kuota</span>
+          </div>
+          <div>
+            <span class="block text-xl sm:text-3xl font-black text-emerald-400" id="stat-remaining-quota">0</span>
+            <span class="text-[10px] sm:text-xs text-slate-400 font-medium uppercase">Sisa Kuota</span>
+          </div>
+          <div>
+            <span class="block text-xl sm:text-3xl font-black text-cyan-400" id="stat-total-categories">0</span>
+            <span class="text-[10px] sm:text-xs text-slate-400 font-medium uppercase">Kategori</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CS BERANDA -->
+      <div id="public-cs-section" class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-emerald-200">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 bg-[#25D366] rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <div>
+            <h2 class="text-lg sm:text-2xl font-black text-slate-900">Butuh Bantuan? Hubungi CS Kami</h2>
+            <p class="text-xs sm:text-sm text-emerald-700">Klik untuk chat langsung via WhatsApp</p>
+          </div>
+        </div>
+        <div id="public-cs-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-tags text-amber-500"></i> Pilihan Kategori Lomba
+        </h2>
+        <div id="categories-display" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"></div>
+      </div>
+
+      <!-- FORM -->
+      <div id="register-form-section" class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xl border border-slate-100 max-w-4xl mx-auto">
+        <div class="text-center mb-6 sm:mb-8">
+          <span class="text-[10px] sm:text-xs font-extrabold text-amber-600 bg-amber-50 px-3 py-1 rounded-full uppercase tracking-wider">Formulir Resmi</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">Pendaftaran Peserta</h2>
+          <p class="text-slate-500 text-xs sm:text-sm mt-1">Isi data diri lengkap Anda</p>
+        </div>
+
+        <form id="public-register-form" onsubmit="handleRegister(event)" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Nama Lengkap *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-user text-sm"></i></span>
+                <input type="text" id="reg-name" required placeholder="Sesuai Kartu Identitas" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Nomor HP / WA *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-phone text-sm"></i></span>
+                <input type="tel" id="reg-phone" required placeholder="081234567890" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Email *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-envelope text-sm"></i></span>
+                <input type="email" id="reg-email" required placeholder="nama@email.com" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Password *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-lock text-sm"></i></span>
+                <input type="password" id="reg-password" required minlength="6" placeholder="Minimal 6 karakter" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+              </div>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Jenis Kelamin *</label>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="cursor-pointer">
+                  <input type="radio" name="gender" value="L" required class="hidden peer">
+                  <div class="border-2 border-slate-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-xl p-3 sm:p-4 text-center transition hover:border-slate-300">
+                    <i class="fa-solid fa-person text-2xl sm:text-3xl text-blue-600 mb-1"></i>
+                    <div class="font-bold text-xs sm:text-sm text-slate-800">Laki-laki</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">BIB: <strong>L-xxx</strong></div>
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="gender" value="P" required class="hidden peer">
+                  <div class="border-2 border-slate-200 peer-checked:border-pink-500 peer-checked:bg-pink-50 rounded-xl p-3 sm:p-4 text-center transition hover:border-slate-300">
+                    <i class="fa-solid fa-person-dress text-2xl sm:text-3xl text-pink-600 mb-1"></i>
+                    <div class="font-bold text-xs sm:text-sm text-slate-800">Perempuan</div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">BIB: <strong>P-xxx</strong></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Kategori Lari *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-person-running text-sm"></i></span>
+                <select id="reg-category" required onchange="updatePrice()" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                  <option value="">-- Pilih Kategori --</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Ukuran Kaos *</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-shirt text-sm"></i></span>
+                <select id="reg-jersey" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+                  <option value="">-- Pilih Ukuran --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-xl hidden" id="price-info">
+              <div class="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <span class="text-[10px] sm:text-xs font-bold text-amber-700 uppercase tracking-wider">Harga Tiket</span>
+                  <div class="text-xl sm:text-2xl font-black text-amber-700" id="selected-price">Rp 0</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] sm:text-xs font-bold text-amber-700 uppercase tracking-wider block">Sisa Kuota</span>
+                  <div class="text-xl sm:text-2xl font-black text-amber-700" id="selected-remaining">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-register" class="w-full py-4 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold rounded-2xl text-sm sm:text-base shadow-xl transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane text-amber-400"></i> Lanjutkan ke Pembayaran
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW LOGIN -->
+    <section id="view-login" class="hidden max-w-md mx-auto py-6 sm:py-12">
+      <div class="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100">
+        <div class="text-center mb-6 sm:mb-8">
+          <div class="w-14 h-14 sm:w-16 sm:h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center text-xl sm:text-2xl mx-auto mb-3">
+            <i class="fa-solid fa-right-to-bracket"></i>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900">Portal Masuk</h2>
+          <p class="text-slate-500 text-xs mt-1">Peserta atau Administrator</p>
+        </div>
+
+        <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
+          <button type="button" id="tab-peserta" onclick="switchLoginTab('peserta')" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-slate-900 shadow-sm">Peserta</button>
+          <button type="button" id="tab-admin" onclick="switchLoginTab('admin')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 transition">Admin Event</button>
+        </div>
+
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+          <input type="hidden" id="login-role" value="peserta">
+          <div>
+            <label id="login-label" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Email / No HP *</label>
+            <input type="text" id="login-identifier" required placeholder="Email atau No HP" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Password *</label>
+            <input type="password" id="login-password" required placeholder="Password Anda" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
+          </div>
+          <button type="submit" id="btn-login" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-sm shadow-lg transition mt-2">
+            Masuk Sekarang
+          </button>
+        </form>
+
+        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
+          <p class="font-bold mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Info Login</p>
+          <p>Peserta: gunakan <strong>Email</strong> atau <strong>No HP</strong> yang terdaftar.</p>
+          <p class="mt-1">Admin: gunakan kredensial dari panitia.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW PESERTA -->
+    <section id="view-participant" class="hidden space-y-6 sm:space-y-8">
+      <div class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 mb-2 flex-wrap">
+            <span class="text-[10px] sm:text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-slate-100 text-slate-600" id="p-badge">MEMUAT...</span>
+            <span class="text-[10px] sm:text-xs text-slate-400">ID: <span id="p-id">-</span></span>
+          </div>
+          <h2 class="text-xl sm:text-3xl font-black text-slate-900 break-words" id="p-name">Selamat Datang</h2>
+          <p class="text-slate-500 text-xs sm:text-sm mt-1">
+            <span id="p-gender" class="font-bold">-</span> |
+            Kategori: <span id="p-cat" class="font-bold text-amber-600">-</span> |
+            Kaos: <span id="p-jersey" class="font-bold text-slate-700">-</span>
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="refreshPeserta()" class="px-3.5 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-rotate mr-1"></i> Refresh
+          </button>
+          <button onclick="logout()" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar
+          </button>
+        </div>
+      </div>
+
+      <div id="p-payment" class="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-100">
+        <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-2">Instruksi Pembayaran</h3>
+        <p class="text-slate-500 text-xs sm:text-sm mb-5 sm:mb-6">Transfer nominal pas lalu unggah bukti transfer.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          <div class="space-y-5">
+            <div class="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
+              <span class="text-[10px] sm:text-xs text-slate-500 uppercase font-bold block mb-1">Total Tagihan</span>
+              <span class="text-2xl sm:text-3xl font-black text-amber-600" id="p-price">Rp 0</span>
+            </div>
+            <div class="space-y-3 sm:space-y-4">
+              <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                <span class="text-[10px] sm:text-xs font-bold text-blue-800 uppercase block mb-1"><i class="fa-solid fa-building-columns mr-1"></i> Transfer Bank</span>
+                <p class="text-xs sm:text-sm text-slate-800 whitespace-pre-line font-medium break-words" id="p-bank">-</p>
+              </div>
+              <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col items-center text-center">
+                <span class="text-[10px] sm:text-xs font-bold text-emerald-800 uppercase block mb-2"><i class="fa-solid fa-qrcode mr-1"></i> QRIS</span>
+                <img id="p-qris" src="" alt="QRIS" class="w-40 h-40 sm:w-48 sm:h-48 rounded-xl object-contain border border-emerald-200 shadow-sm bg-white p-2">
+                <span class="text-[10px] text-emerald-600 font-medium mt-2">Scan dengan Mobile Banking / E-Wallet</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 flex flex-col">
+            <h4 class="font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider mb-2">Unggah Bukti Transfer</h4>
+            <p class="text-[10px] sm:text-xs text-slate-500 mb-4">Format JPG/PNG/WebP (Maks 2MB)</p>
+            <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-4 flex-1 flex flex-col">
+              <div class="border-2 border-dashed border-slate-300 hover:border-amber-500 bg-white rounded-2xl p-5 text-center cursor-pointer transition">
+                <i class="fa-solid fa-cloud-arrow-up text-2xl sm:text-3xl text-slate-400 mb-2"></i>
+                <input type="file" id="proof-file" accept="image/jpeg,image/jpg,image/png,image/webp" required onchange="previewProof(event)" class="hidden">
+                <label for="proof-file" class="block cursor-pointer">
+                  <span class="text-xs font-bold text-amber-600 hover:underline">Pilih File Gambar</span>
+                  <span class="text-[10px] sm:text-xs text-slate-400 block mt-1 break-words" id="file-name">Belum ada file</span>
+                </label>
+              </div>
+              <div id="proof-preview" class="hidden"></div>
+              <button type="submit" id="btn-upload" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-md mt-auto">
+                Kirim Bukti Pembayaran
+              </button>
+            </form>
+            <div class="mt-4 p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-[10px] sm:text-xs text-amber-900">
+              <i class="fa-solid fa-circle-info mr-1"></i> Status diverifikasi admin dalam 1x24 jam.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="p-ticket" class="hidden space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="text-xl sm:text-2xl font-black text-slate-900">E-Tiket & Kartu BIB</h3>
+            <p class="text-slate-500 text-xs mt-0.5">Cetak atau simpan kartu ini.</p>
+          </div>
+          <button onclick="printTicket()" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-2">
+            <i class="fa-solid fa-print"></i> Cetak / PDF
+          </button>
+        </div>
+
+        <div class="printable-area space-y-6">
+          <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden border border-slate-800">
+            <div class="absolute -right-6 -bottom-6 opacity-10 text-7xl sm:text-9xl font-black italic select-none pointer-events-none">RUN</div>
+            <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-slate-700/80">
+              <div>
+                <span class="px-3 py-1 bg-amber-500 text-slate-950 rounded-full text-[10px] font-black uppercase tracking-wider">E-Tiket Resmi</span>
+                <h4 class="text-xl sm:text-2xl font-black uppercase tracking-tight mt-2" id="et-title">DISPENDIK RUN 2026</h4>
+                <p class="text-[10px] sm:text-xs text-slate-400" id="et-date">-</p>
+              </div>
+              <div class="text-left sm:text-right">
+                <span class="text-[10px] sm:text-xs text-slate-400 block uppercase">Nomor BIB</span>
+                <span class="text-3xl sm:text-4xl font-black text-amber-400 tracking-wider" id="et-bib">L-000</span>
+              </div>
+            </div>
+            <div class="relative z-10 pt-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div class="space-y-3 md:col-span-2">
+                <div>
+                  <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Nama Peserta</span>
+                  <span class="text-base sm:text-lg font-bold text-white break-words" id="et-name">-</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Gender</span>
+                    <span class="text-xs sm:text-sm font-semibold text-white" id="et-gender">-</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Kategori</span>
+                    <span class="text-xs sm:text-sm font-semibold text-amber-400" id="et-cat">-</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Kaos</span>
+                    <span class="text-xs sm:text-sm font-semibold text-slate-200" id="et-jersey">-</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex flex-col items-center justify-center p-3 bg-white rounded-2xl text-slate-900 shadow-inner">
+                <div id="et-qr"></div>
+                <span class="text-[10px] text-slate-500 font-bold uppercase mt-2">Scan Validasi</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bib-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-2xl mx-auto text-center">
+            <div class="flex items-center justify-between border-b-4 border-slate-900 pb-3 mb-5 flex-wrap gap-2">
+              <div class="text-left">
+                <span class="text-base sm:text-xl font-black text-slate-900 uppercase tracking-tighter">DISPENDIK RUN</span>
+                <span class="text-[10px] font-bold text-amber-600 uppercase block tracking-widest">OFFICIAL RUNNER BIB</span>
+              </div>
+              <div class="flex gap-2">
+                <div class="px-2.5 py-1.5 bg-slate-900 text-white font-black text-[10px] sm:text-xs rounded-lg uppercase tracking-wider" id="bib-cat">10K</div>
+                <div class="px-2.5 py-1.5 text-white font-black text-[10px] sm:text-xs rounded-lg uppercase tracking-wider" id="bib-gender" style="background:#2563eb;">L</div>
+              </div>
+            </div>
+            <div class="my-5 sm:my-6">
+              <span class="text-5xl sm:text-7xl md:text-8xl font-black text-slate-950 tracking-widest font-mono break-all" id="bib-num">L-001</span>
+            </div>
+            <div class="border-t-4 border-slate-900 pt-3 mt-5">
+              <span class="text-lg sm:text-2xl font-black text-slate-900 uppercase tracking-wide block break-words" id="bib-name">-</span>
+              <span class="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase mt-1 block">Tunjukkan nomor BIB ini saat pengambilan Racepack</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW ADMIN -->
+    <section id="view-admin" class="hidden space-y-6 sm:space-y-8">
+
+      <div class="bg-slate-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-800">
+        <div>
+          <span class="px-3 py-1 bg-amber-500 text-slate-950 rounded-full text-[10px] font-black uppercase tracking-wider">Panel Admin</span>
+          <h2 class="text-xl sm:text-3xl font-black tracking-tight mt-2">Kelola Event & Peserta</h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="refreshAdmin()" class="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+          <button onclick="exportExcel()" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-excel"></i> Excel
+          </button>
+          <button onclick="exportPDF()" class="px-3.5 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-pdf"></i> PDF
+          </button>
+          <button onclick="logout()" class="px-3.5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-right-from-bracket"></i> Keluar
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-lg">
+          <span class="text-[10px] sm:text-xs text-slate-400 font-bold uppercase block mb-1">Total</span>
+          <span class="text-2xl sm:text-3xl font-black text-slate-900" id="s-total">0</span>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-lg">
+          <span class="text-[10px] sm:text-xs text-emerald-600 font-bold uppercase block mb-1">Verified</span>
+          <span class="text-2xl sm:text-3xl font-black text-emerald-600" id="s-verified">0</span>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-lg">
+          <span class="text-[10px] sm:text-xs text-amber-600 font-bold uppercase block mb-1">Pending</span>
+          <span class="text-2xl sm:text-3xl font-black text-amber-600" id="s-pending">0</span>
+        </div>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-lg">
+          <span class="text-[10px] sm:text-xs text-blue-600 font-bold uppercase block mb-1">Omset</span>
+          <span class="text-xl sm:text-2xl font-black text-blue-600 break-words" id="s-revenue">Rp 0</span>
+        </div>
+      </div>
+
+      <div class="flex border-b border-slate-200 gap-1 sm:gap-4 overflow-x-auto">
+        <button id="tabbtn-peserta" onclick="switchAdminTab('peserta')" class="pb-3 px-2 text-xs sm:text-sm font-bold text-amber-600 border-b-2 border-amber-600 whitespace-nowrap">
+          <i class="fa-solid fa-users mr-1"></i> Peserta
+        </button>
+        <button id="tabbtn-kategori" onclick="switchAdminTab('kategori')" class="pb-3 px-2 text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-solid fa-tags mr-1"></i> Kategori
+        </button>
+        <button id="tabbtn-jersey" onclick="switchAdminTab('jersey')" class="pb-3 px-2 text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-solid fa-shirt mr-1"></i> Ukuran Kaos
+        </button>
+        <button id="tabbtn-cs" onclick="switchAdminTab('cs')" class="pb-3 px-2 text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-brands fa-whatsapp mr-1"></i> Kontak CS
+        </button>
+        <button id="tabbtn-settings" onclick="switchAdminTab('settings')" class="pb-3 px-2 text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-solid fa-sliders mr-1"></i> Pengaturan
+        </button>
+      </div>
+
+      <!-- TAB PESERTA -->
+      <div id="tab-peserta" class="space-y-4">
+        <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-md flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div class="relative w-full md:w-80">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+            <input type="text" id="search-input" onkeyup="renderTable()" placeholder="Cari nama, email, BIB, HP..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <select id="filter-status" onchange="renderTable()" class="flex-1 sm:flex-none px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+              <option value="ALL">Semua Status</option>
+              <option value="Verified">Verified</option>
+              <option value="Pending">Pending</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <select id="filter-category" onchange="renderTable()" class="flex-1 sm:flex-none px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+              <option value="ALL">Semua Kategori</option>
+            </select>
+            <select id="filter-gender" onchange="renderTable()" class="flex-1 sm:flex-none px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+              <option value="ALL">Semua Gender</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse min-w-[820px]">
+              <thead>
+                <tr class="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider">
+                  <th class="p-3">BIB / ID</th>
+                  <th class="p-3">Peserta</th>
+                  <th class="p-3 text-center">L/P</th>
+                  <th class="p-3">Kategori</th>
+                  <th class="p-3">Kaos</th>
+                  <th class="p-3">Bukti</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-body" class="divide-y divide-slate-100 text-slate-700 font-medium"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB KATEGORI -->
+      <div id="tab-kategori" class="hidden bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-100 space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="text-lg sm:text-2xl font-black text-slate-900">Kelola Kategori Lomba</h3>
+            <p class="text-slate-500 text-xs mt-1">Atur jenis lomba, harga tiket, dan kuota.</p>
+          </div>
+          <button onclick="addCategoryRow()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
+            <i class="fa-solid fa-plus"></i> Tambah
+          </button>
+        </div>
+        <div id="categories-editor" class="space-y-3"></div>
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
+          <button onclick="loadCategoriesEditor()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+          </button>
+          <button onclick="saveCategoriesEditor()" class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition shadow-lg">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB JERSEY -->
+      <div id="tab-jersey" class="hidden bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-100 space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="text-lg sm:text-2xl font-black text-slate-900">Kelola Ukuran Kaos</h3>
+            <p class="text-slate-500 text-xs mt-1">Atur pilihan ukuran kaos peserta.</p>
+          </div>
+          <button onclick="addJerseyRow()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
+            <i class="fa-solid fa-plus"></i> Tambah
+          </button>
+        </div>
+        <div id="jerseys-editor" class="space-y-3"></div>
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
+          <button onclick="loadJerseysEditor()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+          </button>
+          <button onclick="saveJerseysEditor()" class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition shadow-lg">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB CS -->
+      <div id="tab-cs" class="hidden bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-100 space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 class="text-lg sm:text-2xl font-black text-slate-900">
+              <i class="fa-brands fa-whatsapp text-[#25D366] mr-1"></i> Kelola Kontak CS
+            </h3>
+            <p class="text-slate-500 text-xs mt-1">Kontak tampil di beranda untuk peserta.</p>
+          </div>
+          <button onclick="addCsRow()" class="px-4 py-2.5 bg-[#25D366] hover:bg-[#1da851] text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
+            <i class="fa-solid fa-plus"></i> Tambah CS
+          </button>
+        </div>
+
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
+          <i class="fa-solid fa-circle-info mr-1"></i>
+          <strong>Format Nomor WA:</strong> Gunakan format internasional tanpa "+" (contoh: <code class="bg-white px-1 rounded">6281234567890</code>).
+        </div>
+
+        <div id="cs-editor" class="space-y-3"></div>
+
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
+          <button onclick="loadCsEditor()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+          </button>
+          <button onclick="saveCsEditor()" class="px-6 py-3 bg-[#25D366] hover:bg-[#1da851] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition shadow-lg">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Kontak
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB SETTINGS -->
+      <div id="tab-settings" class="hidden bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xl border border-slate-100 max-w-3xl mx-auto space-y-5">
+        <h3 class="text-lg sm:text-2xl font-black text-slate-900">Pengaturan Event</h3>
+        <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Judul Event *</label>
+              <input type="text" id="set-title" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Tanggal Event *</label>
+              <input type="text" id="set-date" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Info Rekening *</label>
+              <textarea id="set-bank" rows="2" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">URL QRIS *</label>
+              <input type="text" id="set-qris" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Username Admin</label>
+              <input type="text" id="set-admin-user" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Password Admin Baru</label>
+              <input type="password" id="set-admin-pass" placeholder="Kosongkan jika tidak diubah" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+            </div>
+          </div>
+          <button type="submit" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs sm:text-sm uppercase tracking-wider transition shadow-md">
+            Simpan Pengaturan
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW STATUS CHECK -->
+    <section id="view-status-check" class="hidden max-w-xl mx-auto py-6 sm:py-8">
+      <div class="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 text-center">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl sm:text-2xl mx-auto mb-3">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-black text-slate-900">Cek Status & E-Tiket</h2>
+        <p class="text-slate-500 text-xs mt-1 mb-6">Masukkan Email yang terdaftar</p>
+        <form onsubmit="handleCheckStatus(event)" class="space-y-4">
+          <input type="email" id="check-email" required placeholder="nama@email.com" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <button type="submit" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition">
+            Cari Pendaftaran
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="pdf-report-container"></div>
+
+<script>
+// ==================== STATE ====================
+const GAS_URL = '<?= gasUrl ?>';
+let appSettings = {};
+let categoriesData = [];
+let jerseysData = [];
+let csData = [];
+let publicStats = { stats: [], totalQuota: 0, totalUsed: 0, totalRemaining: 0 };
+let participantsData = [];
+let currentUser = null;
+let categoryRows = [];
+let jerseyRows = [];
+let csRows = [];
+let loadingStats = false;
+let lastProofUrl = '';
+
+// ==================== API ====================
+async function api(action, data = {}, showLoad = true) {
+  if (showLoad) showLoading(true);
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, data })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('API err:', err);
+    return { status: 'error', message: 'Koneksi gagal: ' + err.message };
+  } finally {
+    if (showLoad) showLoading(false);
+  }
+}
+
+function showLoading(show, text = 'Memproses...') {
+  document.getElementById('loading-text').innerText = text;
+  document.getElementById('loading-overlay').classList.toggle('hidden', !show);
+}
+
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function rp(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
+
+function genderLabel(g) { return g === 'L' ? 'Laki-laki' : g === 'P' ? 'Perempuan' : '-'; }
+
+function driveId(url) {
+  if (!url) return '';
+  const m = String(url).match(/[-\w]{25,}/);
+  return m ? m[0] : '';
+}
+
+function waNumber(phone) {
+  if (!phone) return '';
+  let c = String(phone).replace(/[^0-9]/g, '');
+  if (c.indexOf('0') === 0) c = '62' + c.substring(1);
+  if (c.indexOf('62') !== 0) c = '62' + c;
+  return c;
+}
+
+function waLink(phone, msg) {
+  const n = waNumber(phone);
+  const t = msg ? encodeURIComponent(msg) : '';
+  return 'https://wa.me/' + n + (t ? '?text=' + t : '');
+}
+
+// ==================== INIT ====================
+window.addEventListener('DOMContentLoaded', async () => {
+  showLoading(true, 'Memuat data...');
+  await Promise.all([
+    loadSettings(),
+    loadCategories(),
+    loadJerseys(),
+    loadCs(),
+    loadStats()
+  ]);
+  showLoading(false);
+});
+
+async function loadSettings() {
+  const r = await api('getSettings', {}, false);
+  if (r.status === 'success') { appSettings = r.settings || {}; updateLandingStats(); }
+}
+
+async function loadCategories() {
+  const r = await api('getCategories', {}, false);
+  if (r.status === 'success') {
+    categoriesData = r.categories || [];
+    renderCategoryCards();
+    fillCategorySelect();
+    fillAdminCategoryFilter();
+  }
+}
+
+async function loadJerseys() {
+  const r = await api('getJerseys', {}, false);
+  if (r.status === 'success') { jerseysData = r.jerseys || []; fillJerseySelect(); }
+}
+
+async function loadCs() {
+  const r = await api('getCs', {}, false);
+  if (r.status === 'success') { csData = r.cs || []; renderPublicCs(); }
+}
+
+async function loadStats() {
+  if (loadingStats) return;
+  loadingStats = true;
+  try {
+    const r = await api('getPublicStats', {}, false);
+    if (r.status === 'success') {
+      publicStats = r;
+      updateLandingStats();
+      renderCategoryCards();
+    }
+  } finally { loadingStats = false; }
+}
+
+async function loadParticipants() {
+  const r = await api('getParticipants', {}, false);
+  if (r.status === 'success') participantsData = r.participants || [];
+}
+
+// ==================== TOAST & MODAL ====================
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800';
+  t.className = `${bg} text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center justify-between gap-3 pointer-events-auto`;
+  t.innerHTML = `<span class="break-words">${esc(msg)}</span><button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>`;
+  c.appendChild(t);
+  setTimeout(() => { if (t.parentElement) t.remove(); }, 4000);
+}
+
+function showModal(title, msg) {
+  document.getElementById('modal-title').innerText = title;
+  document.getElementById('modal-body').innerText = msg;
+  document.getElementById('modal-footer').innerHTML = `<button onclick="closeModal()" class="px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-900 transition">Tutup</button>`;
+  document.getElementById('custom-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('custom-modal').classList.add('hidden');
+  lastProofUrl = '';
+}
+
+// ==================== ROUTER ====================
+function switchView(v) {
+  ['landing', 'login', 'participant', 'admin', 'status-check'].forEach(x => {
+    const el = document.getElementById('view-' + x);
+    if (el) el.classList.add('hidden');
+  });
+  const t = document.getElementById('view-' + v);
+  if (t) t.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleMobileMenu() { document.getElementById('mobile-menu').classList.toggle('hidden'); }
+
+function switchLoginTab(role) {
+  document.getElementById('login-role').value = role;
+  const tp = document.getElementById('tab-peserta');
+  const ta = document.getElementById('tab-admin');
+  const lbl = document.getElementById('login-label');
+  if (role === 'peserta') {
+    tp.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-slate-900 shadow-sm";
+    ta.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 transition";
+    lbl.innerText = "Email / No HP *";
+  } else {
+    ta.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-white text-slate-900 shadow-sm";
+    tp.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 transition";
+    lbl.innerText = "Username Admin *";
+  }
+}
+
+function updateLandingStats() {
+  if (appSettings.title) document.getElementById('hero-title').innerText = appSettings.title;
+  if (appSettings.date) document.getElementById('hero-event-date').innerText = appSettings.date;
+  document.getElementById('stat-total-quota').innerText = publicStats.totalQuota || 0;
+  document.getElementById('stat-remaining-quota').innerText = publicStats.totalRemaining || 0;
+  document.getElementById('stat-total-categories').innerText = (publicStats.stats || []).length;
+}
+
+// ==================== PUBLIC CS ====================
+function renderPublicCs() {
+  const c = document.getElementById('public-cs-grid');
+  if (!c) return;
+  if (csData.length === 0) {
+    c.innerHTML = `<div class="sm:col-span-2 lg:col-span-3 bg-white p-6 rounded-2xl text-center text-slate-400"><i class="fa-brands fa-whatsapp text-3xl mb-2 opacity-40"></i><p class="text-sm">Belum ada kontak CS</p></div>`;
+    return;
+  }
+  c.innerHTML = csData.map(x => {
+    const link = waLink(x.phone, `Halo ${x.name}, saya ingin bertanya tentang DISPENDIK RUN 2026.`);
+    return `<a href="${esc(link)}" target="_blank" rel="noopener" class="bg-white p-4 rounded-2xl border border-emerald-200 hover:border-[#25D366] hover:shadow-lg transition flex items-center gap-3 group">
+      <div class="w-12 h-12 bg-[#25D366] rounded-xl flex items-center justify-center text-white text-2xl flex-shrink-0 group-hover:scale-110 transition"><i class="fa-brands fa-whatsapp"></i></div>
+      <div class="min-w-0 flex-1">
+        <div class="font-bold text-slate-800 text-sm truncate">${esc(x.name)}</div>
+        <div class="text-[11px] text-slate-500 truncate">+${esc(waNumber(x.phone))}</div>
+        <div class="text-[10px] text-[#25D366] font-bold mt-0.5">Klik untuk chat →</div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+// ==================== CATEGORY CARDS ====================
+function renderCategoryCards() {
+  const c = document.getElementById('categories-display');
+  const stats = publicStats.stats || [];
+  if (stats.length === 0) {
+    c.innerHTML = `<div class="sm:col-span-2 lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-100 text-center text-slate-400"><i class="fa-solid fa-tags text-4xl mb-3 opacity-30"></i><p class="text-sm">Belum ada kategori</p></div>`;
+    return;
+  }
+  c.innerHTML = stats.map(s => {
+    const isFull = s.remaining <= 0;
+    const pct = s.quota > 0 ? Math.min(100, Math.round((s.used / s.quota) * 100)) : 0;
+    const fc = pct >= 90 ? 'progress-fill danger' : pct >= 70 ? 'progress-fill warning' : 'progress-fill';
+    return `<div class="bg-white rounded-2xl border border-slate-100 shadow-lg overflow-hidden hover:shadow-xl transition">
+      <div class="bg-gradient-to-r from-slate-900 to-slate-800 p-4 text-white">
+        <div class="flex items-center justify-between">
+          <div class="min-w-0">
+            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Kategori</span>
+            <h3 class="text-lg font-black truncate">${esc(s.name)}</h3>
+          </div>
+          <div class="bg-amber-500 text-slate-950 px-3 py-1.5 rounded-lg font-black text-sm flex-shrink-0 ml-2">${esc(s.code)}</div>
+        </div>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-500 uppercase">Harga</span>
+          <span class="text-base font-black text-amber-600">${rp(s.price)}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="p-2 bg-slate-50 rounded-lg"><div class="text-[10px] text-slate-500 font-bold uppercase">Kuota</div><div class="text-base font-black text-slate-900">${s.quota}</div></div>
+          <div class="p-2 bg-amber-50 rounded-lg"><div class="text-[10px] text-amber-700 font-bold uppercase">Terisi</div><div class="text-base font-black text-amber-700">${s.used}</div></div>
+          <div class="p-2 bg-emerald-50 rounded-lg"><div class="text-[10px] text-emerald-700 font-bold uppercase">Sisa</div><div class="text-base font-black ${isFull ? 'text-red-600' : 'text-emerald-700'}">${s.remaining}</div></div>
+        </div>
+        <div class="progress-bar"><div class="${fc}" style="width:${pct}%"></div></div>
+        <div class="flex justify-between text-[10px] text-slate-500 font-semibold">
+          <span>${pct}% terisi</span><span>✓${s.verified} | ⏳${s.pending}</span>
+        </div>
+        ${isFull
+          ? `<div class="text-center text-xs font-bold text-red-600 bg-red-50 py-2 rounded-lg"><i class="fa-solid fa-circle-exclamation mr-1"></i> KUOTA PENUH</div>`
+          : `<button onclick="preselectCategory('${esc(s.code)}')" class="w-full text-center text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 py-2 rounded-lg transition"><i class="fa-solid fa-arrow-down mr-1"></i> Daftar Kategori Ini</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fillCategorySelect() {
+  const s = document.getElementById('reg-category');
+  s.innerHTML = '<option value="">-- Pilih Kategori --</option>';
+  const stats = publicStats.stats || [];
+  categoriesData.forEach(cat => {
+    const st = stats.find(x => x.code === cat.code);
+    const rem = st ? st.remaining : cat.quota;
+    const isFull = rem <= 0;
+    s.innerHTML += `<option value="${esc(cat.code)}" ${isFull ? 'disabled' : ''}>${esc(cat.name)} - ${rp(cat.price)}</option>`;
+  });
+}
+
+function fillJerseySelect() {
+  const s = document.getElementById('reg-jersey');
+  s.innerHTML = '<option value="">-- Pilih Ukuran --</option>';
+  jerseysData.forEach(j => {
+    s.innerHTML += `<option value="${esc(j.code)}">${esc(j.code)} - ${esc(j.label)}</option>`;
+  });
+}
+
+function fillAdminCategoryFilter() {
+  const s = document.getElementById('filter-category');
+  s.innerHTML = '<option value="ALL">Semua Kategori</option>';
+  categoriesData.forEach(cat => {
+    s.innerHTML += `<option value="${esc(cat.code)}">${esc(cat.name)}</option>`;
+  });
+}
+
+function preselectCategory(code) {
+  const s = document.getElementById('reg-category');
+  if (s) { s.value = code; updatePrice(); }
+  document.getElementById('register-form-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updatePrice() {
+  const code = document.getElementById('reg-category').value;
+  const box = document.getElementById('price-info');
+  if (!code) { box.classList.add('hidden'); return; }
+  const cat = categoriesData.find(c => c.code === code);
+  const st = publicStats.stats.find(s => s.code === code);
+  if (!cat) return;
+  document.getElementById('selected-price').innerText = rp(cat.price);
+  document.getElementById('selected-remaining').innerText = st ? st.remaining : cat.quota;
+  box.classList.remove('hidden');
+}
+
+// ==================== REGISTER ====================
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Memproses...';
+
+  const g = document.querySelector('input[name="gender"]:checked');
+  if (!g) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane text-amber-400"></i> Lanjutkan ke Pembayaran';
+    showModal('Data Tidak Lengkap', 'Pilih jenis kelamin terlebih dahulu.');
+    return;
+  }
+
+  const data = {
+    name: document.getElementById('reg-name').value.trim(),
+    phone: document.getElementById('reg-phone').value.trim(),
+    email: document.getElementById('reg-email').value.trim(),
+    password: document.getElementById('reg-password').value.trim(),
+    gender: g.value,
+    category: document.getElementById('reg-category').value,
+    jersey: document.getElementById('reg-jersey').value
+  };
+
+  const r = await api('register', data, false);
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane text-amber-400"></i> Lanjutkan ke Pembayaran';
+
+  if (r.status === 'success') {
+    currentUser = { ...r.user, role: 'peserta' };
+    toast('Pendaftaran Berhasil!', 'success');
+    await loadStats();
+    setupPeserta(currentUser);
+    switchView('participant');
+    document.getElementById('public-register-form').reset();
+    document.getElementById('price-info').classList.add('hidden');
+  } else {
+    showModal('Pendaftaran Gagal', r.message);
+  }
+}
+
+// ==================== LOGIN ====================
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Memproses...';
+
+  const role = document.getElementById('login-role').value;
+  const identifier = document.getElementById('login-identifier').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+
+  const r = await api('login', { role, identifier, password }, false);
+  btn.disabled = false;
+  btn.innerText = 'Masuk Sekarang';
+
+  if (r.status === 'success') {
+    currentUser = { ...r.user, role };
+    toast(`Selamat datang, ${r.user.name}!`, 'success');
+    if (role === 'admin') {
+      await Promise.all([loadParticipants(), loadStats(), loadCategories(), loadJerseys(), loadCs(), loadSettings()]);
+      setupAdmin();
+      switchView('admin');
+    } else {
+      setupPeserta(currentUser);
+      switchView('participant');
+    }
+    document.getElementById('login-form').reset();
+  } else {
+    showModal('Login Gagal', r.message);
+  }
+}
+
+function logout() {
+  currentUser = null;
+  toast('Anda telah keluar.');
+  switchView('landing');
+}
+
+// ==================== PESERTA ====================
+async function refreshPeserta() {
+  if (!currentUser) return;
+  const r = await api('checkStatus', { email: currentUser.email });
+  if (r.status === 'success') {
+    currentUser = { ...r.user, role: 'peserta' };
+    setupPeserta(currentUser);
+    toast('Data diperbarui!', 'success');
+  }
+}
+
+function setupPeserta(user) {
+  document.getElementById('p-name').innerText = `Selamat Datang, ${user.name}`;
+  document.getElementById('p-id').innerText = user.id;
+  document.getElementById('p-cat').innerText = user.category;
+  document.getElementById('p-jersey').innerText = user.jersey;
+  document.getElementById('p-gender').innerHTML = user.gender === 'P'
+    ? '<span class="text-pink-600">Perempuan</span>'
+    : '<span class="text-blue-600">Laki-laki</span>';
+
+  document.getElementById('p-price').innerText = rp(user.price || 0);
+  document.getElementById('p-bank').innerText = appSettings.bank || '-';
+  if (appSettings.qris) document.getElementById('p-qris').src = appSettings.qris;
+
+  const badge = document.getElementById('p-badge');
+  const pay = document.getElementById('p-payment');
+  const tick = document.getElementById('p-ticket');
+
+  if (user.status === 'Verified') {
+    badge.innerText = 'TERVERIFIKASI / LUNAS';
+    badge.className = 'text-[10px] sm:text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-emerald-100 text-emerald-800';
+    pay.classList.add('hidden');
+    tick.classList.remove('hidden');
+    renderTicket(user);
+  } else if (user.status === 'Rejected') {
+    badge.innerText = 'PEMBAYARAN DITOLAK';
+    badge.className = 'text-[10px] sm:text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-red-100 text-red-800';
+    pay.classList.remove('hidden');
+    tick.classList.add('hidden');
+  } else {
+    badge.innerText = 'MENUNGGU VERIFIKASI';
+    badge.className = 'text-[10px] sm:text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-amber-100 text-amber-800';
+    pay.classList.remove('hidden');
+    tick.classList.add('hidden');
+  }
+}
+
+// ==================== PREVIEW ====================
+function previewProof(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+
+  if (['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].indexOf(f.type) === -1) {
+    showModal('Format Tidak Didukung', 'Gunakan JPG, PNG, atau WebP.');
+    e.target.value = '';
+    return;
+  }
+  if (f.size > 2 * 1024 * 1024) {
+    showModal('File Terlalu Besar', 'Maksimal 2MB. Ukuran: ' + (f.size / 1024 / 1024).toFixed(2) + 'MB');
+    e.target.value = '';
+    return;
+  }
+
+  document.getElementById('file-name').innerHTML = '<span class="text-emerald-600 font-bold">✓</span> ' + esc(f.name) + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
+
+  const c = document.getElementById('proof-preview');
+  c.innerHTML = '<div class="file-preview-loading"><div class="spinner"></div><span class="text-xs">Memuat...</span></div>';
+  c.classList.remove('hidden');
+
+  const reader = new FileReader();
+  reader.onload = evt => {
+    const img = new Image();
+    img.onload = () => {
+      c.innerHTML = `<div class="space-y-2">
+        <div class="file-preview-wrap"><img src="${evt.target.result}" alt="Preview"></div>
+        <div class="flex items-center justify-between gap-2 text-[11px] px-1">
+          <span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> Preview berhasil</span>
+          <button type="button" onclick="clearProof()" class="text-red-600 hover:text-red-700 font-bold"><i class="fa-solid fa-xmark mr-1"></i> Hapus</button>
+        </div>
+      </div>`;
+    };
+    img.onerror = () => previewErr('Gambar rusak.');
+    img.src = evt.target.result;
+  };
+  reader.onerror = () => previewErr('Gagal baca file.');
+  reader.readAsDataURL(f);
+}
+
+function previewErr(msg) {
+  const c = document.getElementById('proof-preview');
+  c.classList.remove('hidden');
+  c.innerHTML = `<div class="file-preview-wrap error">
+    <div class="space-y-2">
+      <div class="text-3xl text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <p class="text-xs font-bold text-amber-900">${esc(msg)}</p>
+      <button type="button" onclick="clearProof()" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i> Pilih Lagi</button>
+    </div>
+  </div>`;
+}
+
+function clearProof() {
+  document.getElementById('proof-file').value = '';
+  document.getElementById('file-name').innerText = 'Belum ada file';
+  const c = document.getElementById('proof-preview');
+  c.innerHTML = '';
+  c.classList.add('hidden');
+}
+
+// ==================== UPLOAD ====================
+async function handleUpload(e) {
+  e.preventDefault();
+  const img = document.querySelector('#proof-preview img');
+  const src = img ? img.src : '';
+  if (!src || src.length < 50) {
+    showModal('Peringatan', 'Pilih file gambar terlebih dahulu.');
+    return;
+  }
+  if (!currentUser) return;
+
+  const btn = document.getElementById('btn-upload');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Mengunggah...';
+
+  try {
+    const r = await api('uploadProof', {
+      userId: currentUser.id,
+      base64Image: src,
+      fileName: 'PROOF_' + currentUser.id + '_' + Date.now() + '.jpg'
+    }, false);
+
+    if (r.status === 'success') {
+      currentUser.proof = r.proofUrl;
+      currentUser.status = 'Pending';
+      toast('Bukti diunggah!', 'success');
+      setupPeserta(currentUser);
+      await loadStats();
+      clearProof();
+      document.getElementById('upload-form').reset();
+    } else {
+      showModal('Upload Gagal', r.message || 'Terjadi kesalahan.');
+    }
+  } catch (err) {
+    showModal('Upload Gagal', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
+
+// ==================== TICKET ====================
+function renderTicket(user) {
+  document.getElementById('et-title').innerText = appSettings.title || 'DISPENDIK RUN 2026';
+  document.getElementById('et-date').innerText = appSettings.date || '-';
+  document.getElementById('et-bib').innerText = user.bib;
+  document.getElementById('et-name').innerText = user.name;
+  document.getElementById('et-gender').innerText = genderLabel(user.gender);
+  document.getElementById('et-cat').innerText = user.category;
+  document.getElementById('et-jersey').innerText = user.jersey;
+  document.getElementById('bib-cat').innerText = user.category;
+  document.getElementById('bib-num').innerText = user.bib;
+  document.getElementById('bib-name').innerText = user.name;
+
+  const gb = document.getElementById('bib-gender');
+  gb.innerText = user.gender === 'P' ? 'P' : 'L';
+  gb.style.background = user.gender === 'P' ? '#db2777' : '#2563eb';
+
+  const qr = document.getElementById('et-qr');
+  qr.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qr, {
+      text: `DISPENDIK-RUN|${user.id}|${user.bib}|${user.name}|${user.gender}`,
+      width: 100, height: 100
+    });
+  }
+}
+
+function printTicket() { window.print(); }
+
+// ==================== ADMIN ====================
+function setupAdmin() {
+  renderStats();
+  renderTable();
+  loadCategoriesEditor();
+  loadJerseysEditor();
+  loadCsEditor();
+  loadSettingsForm();
+}
+
+async function refreshAdmin() {
+  await Promise.all([loadParticipants(), loadStats()]);
+  renderStats();
+  renderTable();
+  toast('Data diperbarui!', 'success');
+}
+
+function switchAdminTab(tab) {
+  ['peserta', 'kategori', 'jersey', 'cs', 'settings'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    const btn = document.getElementById('tabbtn-' + t);
+    if (el) el.classList.add('hidden');
+    if (btn) btn.className = 'pb-3 px-2 text-xs sm:text-sm font-bold text-slate-400 hover:text-slate-700 whitespace-nowrap';
+  });
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  const ab = document.getElementById('tabbtn-' + tab);
+  ab.className = 'pb-3 px-2 text-xs sm:text-sm font-bold text-amber-600 border-b-2 border-amber-600 whitespace-nowrap';
+}
+
+function renderStats() {
+  document.getElementById('s-total').innerText = participantsData.length;
+  const v = participantsData.filter(p => p.status === 'Verified');
+  document.getElementById('s-verified').innerText = v.length;
+  document.getElementById('s-pending').innerText = participantsData.filter(p => p.status === 'Pending').length;
+  const rev = v.reduce((s, p) => s + (Number(p.price) || 0), 0);
+  document.getElementById('s-revenue').innerText = rp(rev);
+}
+
+function renderTable() {
+  const tb = document.getElementById('table-body');
+  const search = (document.getElementById('search-input').value || '').toLowerCase();
+  const fStatus = document.getElementById('filter-status').value;
+  const fCat = document.getElementById('filter-category').value;
+  const fGender = document.getElementById('filter-gender').value;
+
+  const filtered = participantsData.filter(p => {
+    const ms = (p.name || '').toLowerCase().includes(search) ||
+               (p.email || '').toLowerCase().includes(search) ||
+               (p.bib || '').toLowerCase().includes(search) ||
+               (p.phone || '').toLowerCase().includes(search);
+    const mst = fStatus === 'ALL' || p.status === fStatus;
+    const mc = fCat === 'ALL' || p.category === fCat;
+    const mg = fGender === 'ALL' || p.gender === fGender;
+    return ms && mst && mc && mg;
+  });
+
+  if (filtered.length === 0) {
+    tb.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 text-sm">Tidak ada data.</td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = filtered.map(p => {
+    const statusBadge = p.status === 'Verified'
+      ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Verified</span>`
+      : p.status === 'Rejected'
+      ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-100 text-red-800">Rejected</span>`
+      : `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800">Pending</span>`;
+
+    const proofBtn = p.proof
+      ? `<button onclick="viewProof('${esc(p.proof)}')" class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md text-[10px] font-bold inline-flex items-center gap-1"><i class="fa-solid fa-image"></i> Lihat</button>`
+      : `<span class="text-slate-400 italic text-[11px]">-</span>`;
+
+    const gBadge = p.gender === 'P'
+      ? `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-pink-100 text-pink-700">P</span>`
+      : `<span class="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700">L</span>`;
+
+    const wl = waLink(p.phone, `Halo ${p.name}, terkait pendaftaran DISPENDIK RUN 2026.`);
+    const phoneLink = p.phone
+      ? `<a href="${esc(wl)}" target="_blank" rel="noopener" class="text-[#25D366] hover:text-[#1da851] font-bold inline-flex items-center gap-1" title="Chat WhatsApp">
+           <i class="fa-brands fa-whatsapp"></i> ${esc(p.phone)}
+         </a>`
+      : '<span class="text-slate-400">-</span>';
+
+    const bib = p.bib && p.bib !== 'Pending' && p.bib !== 'Rejected' ? p.bib : p.id;
+
+    return `<tr class="hover:bg-slate-50 transition">
+      <td class="p-3 font-bold text-slate-900 text-[11px]">${esc(bib)}</td>
+      <td class="p-3">
+        <div class="font-bold text-slate-800 text-[11px]">${esc(p.name)}</div>
+        <div class="text-[10px] text-slate-400">${esc(p.email)}</div>
+        <div class="text-[10px]">${phoneLink}</div>
+      </td>
+      <td class="p-3 text-center">${gBadge}</td>
+      <td class="p-3"><span class="font-bold text-amber-600 text-[11px]">${esc(p.category)}</span></td>
+      <td class="p-3 text-[11px]">${esc(p.jersey)}</td>
+      <td class="p-3 text-center">${proofBtn}</td>
+      <td class="p-3">${statusBadge}</td>
+      <td class="p-3">
+        <div class="flex items-center justify-center gap-1">
+          <a href="${esc(wl)}" target="_blank" rel="noopener" class="wa-icon-btn" title="Chat WA"><i class="fa-brands fa-whatsapp"></i></a>
+          <button onclick="verify('${esc(p.id)}', 'Verified')" class="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold" title="Setujui"><i class="fa-solid fa-check"></i></button>
+          <button onclick="verify('${esc(p.id)}', 'Rejected')" class="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold" title="Tolak"><i class="fa-solid fa-xmark"></i></button>
+          <button onclick="resetPass('${esc(p.id)}')" class="p-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[10px] font-bold" title="Reset Password"><i class="fa-solid fa-key"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function verify(id, status) {
+  const r = await api('verifyParticipant', { userId: id, newStatus: status });
+  if (r.status === 'success') {
+    toast(r.message, 'success');
+    await Promise.all([loadParticipants(), loadStats()]);
+    renderStats();
+    renderTable();
+  } else {
+    showModal('Gagal', r.message);
+  }
+}
+
+async function resetPass(id) {
+  const r = await api('resetPassword', { userId: id });
+  showModal(r.status === 'success' ? 'Berhasil' : 'Gagal', r.message);
+}
+
+function viewProof(url) {
+  lastProofUrl = url;
+  const body = document.getElementById('modal-body');
+  const footer = document.getElementById('modal-footer');
+  document.getElementById('modal-title').innerText = 'Bukti Transfer';
+
+  const id = driveId(url);
+  const viewUrl = id ? `https://drive.google.com/file/d/${id}/view` : url;
+  const dlUrl = id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+  const thumbUrl = id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
+
+  footer.innerHTML = `<div class="flex flex-wrap gap-2 w-full">
+    <a href="${esc(viewUrl)}" target="_blank" rel="noopener" class="drive-link-btn flex-1 justify-center"><i class="fa-solid fa-up-right-from-square"></i> Buka di Drive</a>
+    <a href="${esc(dlUrl)}" target="_blank" rel="noopener" class="drive-link-btn secondary flex-1 justify-center"><i class="fa-solid fa-download"></i> Download</a>
+  </div>`;
+
+  body.innerHTML = `<div class="file-preview-loading"><div class="spinner"></div><span class="text-xs font-semibold">Memuat...</span></div>`;
+  document.getElementById('custom-modal').classList.remove('hidden');
+
+  let attempt = 0;
+  const urls = [url, thumbUrl];
+  let done = false;
+
+  function tryNext() {
+    if (done) return;
+    if (attempt >= urls.length) { showErr('Gambar tidak dapat dimuat langsung.'); return; }
+    const u = urls[attempt++];
+    const t = new Image();
+    let to = false;
+    const timer = setTimeout(() => { if (!done) { to = true; tryNext(); } }, 8000);
+    t.onload = () => { clearTimeout(timer); if (to || done) return; done = true; showOK(u); };
+    t.onerror = () => { clearTimeout(timer); if (to || done) return; tryNext(); };
+    t.src = u;
+  }
+
+  function showOK(u) {
+    body.innerHTML = `<div class="space-y-3">
+      <div class="file-preview-wrap"><img src="${esc(u)}" alt="Bukti"></div>
+      <p class="text-[11px] text-slate-500 text-center"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Berhasil dimuat</p>
+    </div>`;
+  }
+
+  function showErr(msg) {
+    body.innerHTML = `<div class="file-preview-wrap error">
+      <div class="space-y-2">
+        <div class="text-3xl text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <p class="text-xs font-bold text-amber-900">${esc(msg)}</p>
+        <p class="text-[11px] text-amber-800">Gunakan tombol Buka di Drive atau Download.</p>
+        <button onclick="viewProof(lastProofUrl)" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i> Coba Lagi</button>
+      </div>
+    </div>`;
+  }
+
+  tryNext();
+}
+
+// ==================== CATEGORY EDITOR ====================
+function loadCategoriesEditor() {
+  categoryRows = categoriesData.map(c => ({ ...c }));
+  renderCatEditor();
+}
+
+function renderCatEditor() {
+  const c = document.getElementById('categories-editor');
+  if (categoryRows.length === 0) {
+    c.innerHTML = `<div class="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl"><i class="fa-solid fa-tags text-3xl mb-2 opacity-40"></i><p class="text-sm">Belum ada kategori.</p></div>`;
+    return;
+  }
+  c.innerHTML = categoryRows.map((x, i) => `
+    <div class="grid grid-cols-12 gap-2 sm:gap-3 items-end p-3 bg-slate-50 rounded-xl border border-slate-200">
+      <div class="col-span-6 sm:col-span-2">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kode</label>
+        <input type="text" value="${esc(x.code)}" onchange="upCat(${i}, 'code', this.value)" maxlength="10" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase">
+      </div>
+      <div class="col-span-12 sm:col-span-4 order-last sm:order-none">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama</label>
+        <input type="text" value="${esc(x.name)}" onchange="upCat(${i}, 'name', this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+      </div>
+      <div class="col-span-6 sm:col-span-2">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Harga</label>
+        <input type="number" value="${x.price || 0}" onchange="upCat(${i}, 'price', this.value)" min="0" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+      </div>
+      <div class="col-span-6 sm:col-span-2">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kuota</label>
+        <input type="number" value="${x.quota || 0}" onchange="upCat(${i}, 'quota', this.value)" min="0" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+      </div>
+      <div class="col-span-6 sm:col-span-2">
+        <button onclick="rmCat(${i})" class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold w-full"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addCategoryRow() { categoryRows.push({ code: '', name: '', price: 0, quota: 0 }); renderCatEditor(); }
+function upCat(i, f, v) {
+  if (f === 'code') v = String(v).toUpperCase().trim();
+  if (f === 'price' || f === 'quota') v = Number(v) || 0;
+  categoryRows[i][f] = v;
+}
+function rmCat(i) { categoryRows.splice(i, 1); renderCatEditor(); }
+
+async function saveCategoriesEditor() {
+  if (categoryRows.length === 0) { showModal('Gagal', 'Minimal 1 kategori.'); return; }
+  for (let i = 0; i < categoryRows.length; i++) {
+    const c = categoryRows[i];
+    if (!c.code || !c.name) { showModal('Gagal', `Baris ${i + 1}: kode & nama wajib.`); return; }
+    if (c.price < 0 || c.quota < 0) { showModal('Gagal', `Baris ${i + 1}: harga/kuota negatif.`); return; }
+  }
+  const r = await api('saveCategories', { categories: categoryRows });
+  if (r.status === 'success') {
+    toast('Kategori disimpan!', 'success');
+    await Promise.all([loadCategories(), loadStats()]);
+    fillCategorySelect();
+  } else { showModal('Gagal', r.message); }
+}
+
+// ==================== JERSEY EDITOR ====================
+function loadJerseysEditor() {
+  jerseyRows = jerseysData.map(j => ({ ...j }));
+  renderJerseyEditor();
+}
+
+function renderJerseyEditor() {
+  const c = document.getElementById('jerseys-editor');
+  if (jerseyRows.length === 0) {
+    c.innerHTML = `<div class="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl"><i class="fa-solid fa-shirt text-3xl mb-2 opacity-40"></i><p class="text-sm">Belum ada ukuran.</p></div>`;
+    return;
+  }
+  c.innerHTML = jerseyRows.map((x, i) => `
+    <div class="grid grid-cols-12 gap-2 sm:gap-3 items-end p-3 bg-slate-50 rounded-xl border border-slate-200">
+      <div class="col-span-6 sm:col-span-2">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kode</label>
+        <input type="text" value="${esc(x.code)}" onchange="upJer(${i}, 'code', this.value)" maxlength="10" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase">
+      </div>
+      <div class="col-span-12 sm:col-span-6 order-last sm:order-none">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Label</label>
+        <input type="text" value="${esc(x.label)}" onchange="upJer(${i}, 'label', this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+      </div>
+      <div class="col-span-6 sm:col-span-2">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Urutan</label>
+        <input type="number" value="${x.order || i + 1}" onchange="upJer(${i}, 'order', this.value)" min="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+      </div>
+      <div class="col-span-6 sm:col-span-2">
+        <button onclick="rmJer(${i})" class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold w-full"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addJerseyRow() { jerseyRows.push({ code: '', label: '', order: jerseyRows.length + 1 }); renderJerseyEditor(); }
+function upJer(i, f, v) {
+  if (f === 'code') v = String(v).toUpperCase().trim();
+  if (f === 'order') v = Number(v) || 1;
+  jerseyRows[i][f] = v;
+}
+function rmJer(i) { jerseyRows.splice(i, 1); renderJerseyEditor(); }
+
+async function saveJerseysEditor() {
+  if (jerseyRows.length === 0) { showModal('Gagal', 'Minimal 1 ukuran.'); return; }
+  for (let i = 0; i < jerseyRows.length; i++) {
+    if (!jerseyRows[i].code || !jerseyRows[i].label) { showModal('Gagal', `Baris ${i + 1}: kode & label wajib.`); return; }
+  }
+  const r = await api('saveJerseys', { jerseys: jerseyRows });
+  if (r.status === 'success') {
+    toast('Ukuran disimpan!', 'success');
+    await loadJerseys();
+    fillJerseySelect();
+  } else { showModal('Gagal', r.message); }
+}
+
+// ==================== CS EDITOR ====================
+function loadCsEditor() {
+  csRows = csData.map(c => ({ ...c }));
+  renderCsEditor();
+}
+
+function renderCsEditor() {
+  const c = document.getElementById('cs-editor');
+  if (csRows.length === 0) {
+    c.innerHTML = `<div class="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl"><i class="fa-brands fa-whatsapp text-3xl mb-2 opacity-40"></i><p class="text-sm">Belum ada kontak CS.</p></div>`;
+    return;
+  }
+  c.innerHTML = csRows.map((x, i) => {
+    const preview = x.phone ? '+' + waNumber(x.phone) : '-';
+    const link = x.phone ? waLink(x.phone, `Halo ${x.name || ''}, saya ingin bertanya.`) : '#';
+    return `
+      <div class="grid grid-cols-12 gap-2 sm:gap-3 items-end p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div class="col-span-12 sm:col-span-4">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama CS</label>
+          <input type="text" value="${esc(x.name)}" onchange="upCs(${i}, 'name', this.value)" placeholder="Admin Registration" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+        </div>
+        <div class="col-span-12 sm:col-span-4">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nomor WhatsApp</label>
+          <input type="tel" value="${esc(x.phone)}" onchange="upCs(${i}, 'phone', this.value)" placeholder="6281234567890" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+          <div class="text-[10px] text-slate-400 mt-1">Format: ${esc(preview)}</div>
+        </div>
+        <div class="col-span-6 sm:col-span-2">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Urutan</label>
+          <input type="number" value="${x.order || i + 1}" onchange="upCs(${i}, 'order', this.value)" min="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+        </div>
+        <div class="col-span-6 sm:col-span-2 flex gap-1">
+          <a href="${esc(link)}" target="_blank" rel="noopener" class="wa-icon-btn" title="Test Chat"><i class="fa-brands fa-whatsapp"></i></a>
+          <button onclick="rmCs(${i})" class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-bold flex-1"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addCsRow() { csRows.push({ name: '', phone: '', order: csRows.length + 1 }); renderCsEditor(); }
+function upCs(i, f, v) {
+  if (f === 'order') v = Number(v) || 1;
+  if (f === 'phone') v = String(v).replace(/[^0-9]/g, '');
+  csRows[i][f] = v;
+}
+function rmCs(i) { csRows.splice(i, 1); renderCsEditor(); }
+
+async function saveCsEditor() {
+  if (csRows.length === 0) { showModal('Gagal', 'Minimal 1 kontak CS.'); return; }
+  for (let i = 0; i < csRows.length; i++) {
+    if (!csRows[i].name || !csRows[i].phone) { showModal('Gagal', `Baris ${i + 1}: nama & nomor wajib.`); return; }
+  }
+  const r = await api('saveCs', { cs: csRows });
+  if (r.status === 'success') {
+    toast('Kontak CS disimpan!', 'success');
+    await loadCs();
+    renderPublicCs();
+  } else { showModal('Gagal', r.message); }
+}
+
+// ==================== SETTINGS ====================
+async function loadSettingsForm() {
+  const r = await api('getSettings', {}, false);
+  if (r.status === 'success') {
+    appSettings = r.settings || {};
+    document.getElementById('set-title').value = appSettings.title || '';
+    document.getElementById('set-date').value = appSettings.date || '';
+    document.getElementById('set-bank').value = appSettings.bank || '';
+    document.getElementById('set-qris').value = appSettings.qris || '';
+    document.getElementById('set-admin-user').value = appSettings.adminUser || 'admin';
+    document.getElementById('set-admin-pass').value = '';
+  }
+}
+
+async function saveSettings(e) {
+  e.preventDefault();
+  const data = {
+    title: document.getElementById('set-title').value.trim(),
+    date: document.getElementById('set-date').value.trim(),
+    bank: document.getElementById('set-bank').value.trim(),
+    qris: document.getElementById('set-qris').value.trim(),
+    adminUser: document.getElementById('set-admin-user').value.trim() || 'admin'
+  };
+  const np = document.getElementById('set-admin-pass').value.trim();
+  if (np) {
+    if (np.length < 6) { showModal('Gagal', 'Password minimal 6 karakter.'); return; }
+    data.adminPass = np;
+  }
+  const r = await api('saveSettings', data);
+  if (r.status === 'success') {
+    toast('Pengaturan disimpan!', 'success');
+    await loadSettings();
+  } else { showModal('Gagal', r.message); }
+}
+
+// ==================== EXCEL ====================
+function exportExcel() {
+  if (participantsData.length === 0) { showModal('Info', 'Belum ada data.'); return; }
+  const data = participantsData.map((p, i) => ({
+    'No': i + 1, 'ID': p.id, 'BIB': p.bib, 'Nama': p.name,
+    'Jenis Kelamin': genderLabel(p.gender), 'Email': p.email, 'No HP': p.phone,
+    'Kategori': p.category, 'Kaos': p.jersey, 'Harga': p.price || 0,
+    'Status': p.status, 'Tanggal Daftar': p.date || '-'
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Peserta');
+  XLSX.writeFile(wb, `Rekap_Dispendik_Run_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  toast('Excel diunduh!', 'success');
+}
+
+// ==================== PDF ====================
+function exportPDF() {
+  if (participantsData.length === 0) { showModal('Info', 'Belum ada data.'); return; }
+  if (typeof html2pdf === 'undefined') {
+    showModal('Error', 'Library PDF belum siap. Tunggu beberapa detik, coba lagi.');
+    return;
+  }
+
+  showLoading(true, 'Menyiapkan PDF...');
+  const container = document.getElementById('pdf-report-container');
+  container.innerHTML = buildPDFHtml();
+
+  setTimeout(() => {
+    const filename = 'Rekap_Dispendik_Run_' + new Date().toISOString().slice(0, 10) + '.pdf';
+    const opt = {
+      margin: 0,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy'], after: '.pdf-page' }
+    };
+
+    html2pdf().set(opt).from(container).save()
+      .then(() => {
+        showLoading(false);
+        toast('PDF berhasil diunduh!', 'success');
+        setTimeout(() => { container.innerHTML = ''; }, 800);
+      })
+      .catch(err => {
+        console.error('PDF err:', err);
+        showLoading(false);
+        showModal('Gagal PDF', (err && err.message) || 'Terjadi kesalahan.');
+        container.innerHTML = '';
+      });
+  }, 400);
+}
+
+function buildPDFHtml() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  const total = participantsData.length;
+  const verified = participantsData.filter(p => p.status === 'Verified');
+  const pending = participantsData.filter(p => p.status === 'Pending');
+  const rejected = participantsData.filter(p => p.status === 'Rejected');
+  const revenue = verified.reduce((s, p) => s + (Number(p.price) || 0), 0);
+  const gL = participantsData.filter(p => p.gender === 'L').length;
+  const gP = participantsData.filter(p => p.gender === 'P').length;
+
+  const rowsPerPage = 22;
+  const pages = [];
+  for (let i = 0; i < participantsData.length; i += rowsPerPage) {
+    pages.push(participantsData.slice(i, i + rowsPerPage));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const evtTitle = (appSettings.title || 'DISPENDIK RUN 2026').toUpperCase();
+  const evtDate = appSettings.date || '-';
+
+  return pages.map((pageData, pi) => `
+    <div class="pdf-page">
+      <div class="pdf-header">
+        <div class="pdf-header-left">
+          <h1>${esc(evtTitle)}</h1>
+          <p>${esc(evtDate)}</p>
+        </div>
+        <div class="pdf-header-right">
+          <div><strong>Rekap Data Peserta</strong></div>
+          <div>Dicetak: ${esc(dateStr)} ${esc(timeStr)}</div>
+          <div>Halaman ${pi + 1} / ${pages.length}</div>
+        </div>
+      </div>
+
+      ${pi === 0 ? `
+        <div class="pdf-title">Laporan Rekapitulasi Peserta Lomba</div>
+        <div class="pdf-subtitle">Data pendaftar berdasarkan Spreadsheet Database</div>
+
+        <div class="pdf-summary">
+          <div class="pdf-summary-card"><div class="label">Total Peserta</div><div class="value">${total}</div></div>
+          <div class="pdf-summary-card"><div class="label">Terverifikasi</div><div class="value" style="color:#065f46">${verified.length}</div></div>
+          <div class="pdf-summary-card"><div class="label">Pending</div><div class="value" style="color:#92400e">${pending.length}</div></div>
+          <div class="pdf-summary-card"><div class="label">Ditolak</div><div class="value" style="color:#991b1b">${rejected.length}</div></div>
+        </div>
+
+        <div class="pdf-summary">
+          <div class="pdf-summary-card"><div class="label">Laki-laki</div><div class="value" style="color:#1e40af">${gL}</div></div>
+          <div class="pdf-summary-card"><div class="label">Perempuan</div><div class="value" style="color:#9d174d">${gP}</div></div>
+          <div class="pdf-summary-card"><div class="label">Total Omset</div><div class="value" style="color:#1e40af;font-size:11px">Rp ${revenue.toLocaleString('id-ID')}</div></div>
+          <div class="pdf-summary-card"><div class="label">Kategori</div><div class="value">${categoriesData.length}</div></div>
+        </div>
+      ` : ''}
+
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th class="col-no">No</th>
+            <th class="col-bib">BIB</th>
+            <th class="col-nama">Nama Lengkap</th>
+            <th class="col-gender">L/P</th>
+            <th class="col-kontak">Kontak</th>
+            <th class="col-kategori">Kategori</th>
+            <th class="col-kaos">Kaos</th>
+            <th class="col-harga">Harga</th>
+            <th class="col-status">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageData.length === 0 ? `<tr><td colspan="9" style="text-align:center;padding:20px;color:#94a3b8">Tidak ada data</td></tr>`
+            : pageData.map((p, i) => {
+              const num = pi * rowsPerPage + i + 1;
+              const bib = p.bib && p.bib !== 'Pending' && p.bib !== 'Rejected' ? p.bib : p.id;
+              const sc = p.status === 'Verified' ? 'pdf-status-verified' : p.status === 'Rejected' ? 'pdf-status-rejected' : 'pdf-status-pending';
+              return `<tr>
+                <td class="col-no">${num}</td>
+                <td class="col-bib">${esc(bib)}</td>
+                <td class="col-nama">${esc(p.name)}</td>
+                <td class="col-gender">${esc(p.gender || '-')}</td>
+                <td class="col-kontak"><div>${esc(p.phone || '-')}</div><div style="color:#64748b;font-size:7.5px">${esc(p.email || '-')}</div></td>
+                <td class="col-kategori">${esc(p.category || '-')}</td>
+                <td class="col-kaos">${esc(p.jersey || '-')}</td>
+                <td class="col-harga">${Number(p.price || 0).toLocaleString('id-ID')}</td>
+                <td class="col-status"><span class="pdf-status-badge ${sc}">${esc(p.status)}</span></td>
+              </tr>`;
+            }).join('')}
+        </tbody>
+      </table>
+
+      ${pi === pages.length - 1 ? `
+        <div class="pdf-signature">
+          <div class="pdf-signature-box">
+            <div>${esc(dateStr)}</div>
+            <div style="margin-top:4px">Panitia Penyelenggara</div>
+            <div class="pdf-signature-line">_______________________</div>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="pdf-footer">
+        <div>${esc(evtTitle)} - Rekapitulasi Peserta</div>
+        <div>Halaman ${pi + 1} dari ${pages.length}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==================== CHECK STATUS ====================
+async function handleCheckStatus(e) {
+  e.preventDefault();
+  const email = document.getElementById('check-email').value.trim();
+  const r = await api('checkStatus', { email });
+  if (r.status === 'success') {
+    currentUser = { ...r.user, role: 'peserta' };
+    setupPeserta(currentUser);
+    switchView('participant');
+    toast('Pendaftaran ditemukan!', 'success');
+  } else {
+    showModal('Tidak Ditemukan', r.message);
+  }
+}
+
+// ==================== MODAL CLOSE ====================
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('custom-modal').addEventListener('click', e => {
+  if (e.target.id === 'custom-modal') closeModal();
+});
+</script>
+
+</body>
+</html>
